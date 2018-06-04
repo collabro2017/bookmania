@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+    </head>
+    <body>
+        <h2>{{heading}}</h2>
+        <div>ID: {{book.id}}</div>
+        <div>Name: {{book.name}}</div>
+        <div>Author: {{book.author}}</div>
+        <div>Description: {{book.description}}</div>
+
+        {% if book_url %}
+            <a href="{{book_url}}">Book Link</a>
+        {% endif %}
+    </body>
+</html>

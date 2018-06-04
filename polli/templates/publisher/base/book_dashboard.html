@@ -1,0 +1,83 @@
+{% extends "publisher/base/base_dashboard.html" %}
+{% load static %}
+
+<!-- Head -->
+{% block head %}
+<!-- TinyMCE -->
+<script src="{% static 'vendors/tinymce/js/tinymce/tinymce.js' %}"></script>
+
+<!-- JS Dependencies -->
+<script src="{% static 'js/book_editor/actions.js' %}"></script>
+<script src="{% static 'js/book_editor/reducers.js' %}"></script>
+<script type="text/babel" src="{% static 'js/book_editor/components/book_cover.js' %}"></script>
+
+<script type="text/babel" src="{% static 'js/image_selector/actions.js' %}"></script>
+<script type="text/babel" src="{% static 'js/image_selector/reducers.js' %}"></script>
+<script type="text/babel" src="{% static 'js/image_selector/components/image_selector_modal.js' %}"></script>
+{% endblock %}
+
+
+<!-- Modals -->
+{% block modals %}
+<div id="image-selection-container"></div>
+{% endblock %}
+
+<!-- Section Heading -->
+{% block section_heading %}
+<div class="section-heading">
+
+    <div id='side-menu-book-cover' class="book"></div>
+
+</div>
+{% endblock %}
+
+<!-- Section Menu -->
+{% block section_menu %}
+<div class="section-menu">
+    <a href="{% url 'publisher_general_editor' book.id %}">General</a>
+    <a href="{% url 'publisher_list_editor' book.id %}">Pages</a>
+    <a href="{% url 'publisher_book_analytics' book.id %}">Analytics</a>
+    <a href="{% url 'publisher_book_comments' book.id %}">Comments</a>
+    <a href="{% url 'book_translations' book.id %}">Translations</a>
+</div>
+{% endblock %}
+
+<!-- Redux Store -->
+{% block reducers %}
+    <script type="text/babel">
+        var reducerList = {imageSelectorReducer, bookEditorReducer};
+    </script>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script type="text/babel">
+        // Editor Params
+        var bookInfo = {{book.get_info_json|safe}};
+
+        // Create Redux Store
+        const combined = Redux.combineReducers(reducerList);
+        let store = Redux.createStore(combined);
+
+        // Load Book Info
+        store.dispatch(loadBookInfo(bookInfo));
+
+        // Create Side Menu Book Cover Component
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <SideMenuBookCoverContainer></SideMenuBookCoverContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('side-menu-book-cover')
+        );
+
+        // Render Image Selector Modal
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <ImageSelectorModalContainer images={bookInfo.images}></ImageSelectorModalContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('image-selection-container')
+        );
+    </script>
+{% endblock %}

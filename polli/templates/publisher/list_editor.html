@@ -1,0 +1,150 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+
+
+<!-- Head -->
+{% block head %}
+    {{block.super}}
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+{% endblock %}
+
+
+<!-- Modals -->
+{% block modals %}
+{{ block.super }}
+<div id="delete-modal">
+    <label>Are You Sure?</label>
+    <div class="controls">
+        <div class="btn cancel-btn">Cancel</div>
+        <div class="btn delete-btn">Delete</div>
+    </div>
+</div>
+{% endblock %}
+
+
+<!-- Content -->
+{% block content %}
+
+<div class="row book-grid page-grid">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="glyphicon glyphicon-book"></i>
+        <span>Book Pages</span>
+        <span class="btn btn-info new-btn">
+            <i class="glyphicon glyphicon-file"></i>
+            <span>New Page</span>
+        </span>
+    </div>
+
+    <!-- Pages -->
+    {% for page in pages %}
+    <div class="col-md-2 book page" data-id="{{page.id}}">
+        <div class="cover-image-wrapper">
+
+            <div class="top-status-bar">
+                {% if page.unresolved_comments > 0 %}
+                <span class="status-item">
+
+                    <span class="new-icon"></span>
+
+                    <i class="fa fa-comment"></i>
+                    <span class="value">{{page.unresolved_comments}}</span>
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="overlay">
+                <a class="btn edit-btn" href="{% url 'publisher_page_editor' book.id page.id %}">
+                    <i class="glyphicon glyphicon-pencil"></i>
+                </a>
+                <button class="btn delete-btn">
+                    <i class="glyphicon glyphicon-trash"></i>
+                </button>
+            </div>
+
+            <img class="cover-image" src="{{page.get_page_thumbnail}}"/>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}
+
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+    <script>
+        var bookID = {{book.id}};
+
+        function updatePageOrdering(){
+            console.log('update the page ordering');
+            var pages = [];
+            $('.book-grid .book').each(function(index){
+                pages.push({
+                    id: $(this).data('id'),
+                    order: index
+                });
+            });
+
+            var updateSortingUrl = '/publisher/page/update_page_sorting/';
+            $.post(updateSortingUrl, {'pages': JSON.stringify(pages)}, function(resp){
+                console.log(resp);
+            }, 'json');
+        }
+
+        $( function() {
+
+            // Setup Page Sorting
+            $( ".book-grid" ).sortable({
+                stop: function( event, ui ) {
+                    updatePageOrdering();
+                }
+            });
+
+
+            // Book Deletion
+            var deletePageID = null;
+            $('#delete-modal .delete-btn').click(function(){
+                console.log('confirm delete');
+                $('#delete-modal').fadeOut();
+                var deleteBookUrl = '/publisher/page/'+deletePageID+'/';
+                $.ajax({
+                    url: deleteBookUrl,
+                    type: 'DELETE',
+                    success: function(data, textStatus, jqXHR)
+                    {
+                        console.log('Page Deleted');
+                        updatePageOrdering();
+                    }
+                }, 'json');
+
+                $(".page[data-id='"+deletePageID+"']").remove();
+            });
+
+            $('#delete-modal .cancel-btn').click(function(){
+                console.log('cancel delete');
+                $('#delete-modal').fadeOut();
+            });
+
+            // Setup Page Deletion Handlers
+            $('.page .delete-btn').click(function(){
+                var $page = $(this).closest('.page');
+                deletePageID = $page.data('id');
+                console.log('intent to delete page: ', deletePageID);
+                $('#delete-modal').fadeIn();
+            });
+
+            // New Page - Click Handler
+            $('.content-heading .new-btn').click(function(){
+                console.log('create a new page for the book', bookID);
+                var createPageUrl = '/publisher/page/';
+                $.post(createPageUrl, {book: bookID}, function(resp){
+                    // Redirect to Page Editor
+                    window.location = resp.edit_url;
+                }, 'json');
+            });
+        });
+    </script>
+{% endblock %}

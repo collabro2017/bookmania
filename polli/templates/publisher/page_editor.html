@@ -1,0 +1,334 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+{% load humanize %}
+
+
+<!-- Head -->
+{% block head %}
+    {{block.super}}
+    <script src="{% static 'js/page_editor/actions.js' %}"></script>
+    <script src="{% static 'js/page_editor/reducers.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/page_editor/components/layout_selector.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/page_editor/components/layout_editor.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/page_editor/components/blend_selector.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/page_editor/components/language_selector.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/page_editor/components/undo_manager.js' %}"></script>
+    <link href="https://fonts.googleapis.com/css?family=Baloo|Eagle+Lake|Lato|Open+Sans|Roboto" rel="stylesheet">
+{% endblock %}
+
+{% block body_classes %}no-scroll{% endblock %}
+
+<!-- Modals -->
+{% block modals %}
+    {{block.super}}
+
+    <!-- New Comment Modal -->
+    <div class="modal fade comment-modal" id="new-comment-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <i class="fa fa-comment header-icon" aria-hidden="true"></i>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">New Comment</h4>
+                </div>
+                <div class="modal-body">
+
+                    <div class="select-wrap">
+                        <label>Suggestion</label>
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                        <select>
+                            <option value="suggestion">Suggestion</option>
+                            <option value="warning">Warning</option>
+                            <option value="translation">Translation</option>
+                        </select>
+                    </div>
+
+                    <input class="subject" type="text" placeholder="Subject"/>
+                    <textarea class="message" placeholder="Message"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default cancel-btn" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary save-btn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment Reply Modal -->
+    <div class="modal fade comment-modal" id="comment-reply-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <i class="fa fa-comment header-icon" aria-hidden="true"></i>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Comment Reply</h4>
+                </div>
+                <div class="modal-body">
+                    <textarea class="message" placeholder="Message"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default cancel-btn" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary save-btn">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+<!-- Content -->
+{% block content %}
+<div id='page-editor-content' class="content container-fluid">
+
+    <!-- Editor Controls -->
+    <div class="editor-controls">
+
+        <!-- Layout Selector -->
+        <div id="layout-selector" class="selector-menu"></div>
+
+        <!-- Paging Controls -->
+        <div class="paging-controls">
+
+            {% if paging.prev_page_id %}
+            <a class="btn" href="{% url 'publisher_page_editor' book.id paging.prev_page_id %}">
+                <i class="fa fa-angle-left"></i>
+            </a>
+            {% endif %}
+
+            <label>Page {{paging.page_number}}</label>
+
+            {% if paging.next_page_id %}
+            <a class="btn" href="{% url 'publisher_page_editor' book.id paging.next_page_id %}">
+                <i class="fa fa-angle-right"></i>
+            </a>
+            {% endif %}
+
+        </div>
+
+        <div>
+            <!-- Undo Button -->
+            <div id="undo-btn" class="page-editor-control-btn"></div>
+
+            <!-- Comment Toggle -->
+            <div id="comment-side-bar-toggle" class="page-editor-control-btn">
+                <i class="fa fa-comment" aria-hidden="true"></i>
+                <span>Comments</span>
+                {% if comments %}
+                    <span class="new-icon"></span>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Layout Editor -->
+    <div id="layout-editor-container" class="layout-editor"></div>
+
+</div>
+
+<!-- Comment Side Bar -->
+<div id="comment-side-bar">
+
+    <i class="close-btn fa fa-times" aria-hidden="true"></i>
+
+    <div class="heading">
+        <i class="fa fa-comment" aria-hidden="true"></i>
+        <div>Comments</div>
+
+        <div class="new-comment-btn">
+            <i class="fa fa-plus" aria-hidden="true"></i>
+            <span>New Comment</span>
+        </div>
+
+    </div>
+
+    <div class="comment-list">
+
+        {% for c in comments %}
+        <div class="comment-item {{c.type}}" data-id="{{c.id}}">
+            <div class="comment">
+                <img class="profile-pic" src="{{c.messages.0.profile_pic}}">
+                <div class="info">
+                    <div class="subject">{{c.subject}}</div>
+                    <div class="msg">{{c.messages.0.msg}}</div>
+                </div>
+                <!--<div class="age">{{c.messages.0.date_created|naturaltime}}</div>-->
+                {% if c.is_owner %}
+                <i class="resolve-btn fa fa-check" aria-hidden="true"></i>
+                {% endif %}
+                <i class="reply-btn fa fa-reply" aria-hidden="true"></i>
+            </div>
+            <div class="msg-thread">
+                {% for m in c.messages %}
+                <div class="comment">
+                    <img class="profile-pic" src="{{m.profile_pic}}">
+                    <div class="info">
+                        <div class="subject">{{m.username}}</div>
+                        <div class="msg">{{m.msg}}</div>
+                    </div>
+                    <div class="age">{{m.date_created|naturaltime}}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+
+<!-- Reducers -->
+{% block reducers %}
+    {{block.super}}
+    <script type="text/babel">
+        reducerList = Object.assign({}, reducerList, {pageEditorReducer});
+    </script>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script type="text/babel">
+        //Defaults
+        var defaultImage = "{% static 'images/samples/grey_square_image_placeholder.jpg' %}";
+
+        // Todo - Load From Settings File
+        var BLEND_LEVELS = {{blend_levels|safe}};
+
+        // Editor Params
+        var bookID = {{book.id}};
+        var pageID = {{page_id}};
+        var content = {{content|safe}};
+        var languages = {{languages|safe}};
+
+        // Layout Templates For Publisher
+        var layouts = {{layouts|safe}};
+
+        // Load Page Content into State
+        store.dispatch(loadPageContent(pageID, content));
+
+        // Render Layout Selector
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <LayoutSelectorContainer layouts={layouts}></LayoutSelectorContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('layout-selector')
+        );
+
+        // Render Layout Editor
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <LayoutEditorContainer defaultImage={defaultImage} languages={languages}></LayoutEditorContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('layout-editor-container')
+        );
+
+        // Render Undo Manager
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <UndoManagerContainer />
+            </ReactRedux.Provider>,
+            document.getElementById('undo-btn')
+        );
+
+    </script>
+
+    <!-- New Comment Template -->
+    <script id="new-comment-template" type="text/template">
+        <div class="comment-item <%= type %>" data-id="<%= id %>">
+            <div class="comment">
+                <img class="profile-pic" src="<%= profile_pic %>">
+                <div class="info">
+                    <div class="subject"><%= subject %></div>
+                    <div class="msg"><%= message %></div>
+                </div>
+                <!--<div class="age">Now</div>-->
+                <i class="resolve-btn fa fa-check" aria-hidden="true"></i>
+                <i class="reply-btn fa fa-reply" aria-hidden="true"></i>
+            </div>
+            <div class="msg-thread">
+                <div class="comment">
+                    <img class="profile-pic" src="<%= profile_pic %>">
+                    <div class="info">
+                        <div class="subject"><%= username %></div>
+                        <div class="msg"><%= message %></div>
+                    </div>
+                    <div class="age">Now</div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <!-- Comment Reply Template -->
+    <script id="new-reply-template" type="text/template">
+        <div class="comment">
+            <img class="profile-pic" src="<%= profile_pic %>">
+            <div class="info">
+                <div class="subject"><%= username %></div>
+                <div class="msg"><%= message %></div>
+            </div>
+            <div class="age">Now</div>
+        </div>
+    </script>
+
+    <script type="text/babel" src="{% static 'js/comments/modals.js' %}"></script>
+
+    <script type="text/babel">
+        var newCommentModal;
+        var commentReplyModal;
+
+        $(document).ready(function(){
+            newCommentModal = new NewCommentModal('#new-comment-modal', bookID, pageID);
+            commentReplyModal = new CommentReplyModal('#comment-reply-modal', bookID, pageID);
+
+            // Open Comment
+            $('#comment-side-bar').on('click', '.comment-item > .comment', function(){
+                $(this).parent().children('.msg-thread').slideToggle();
+                var parentCommentID = $(this).closest('.comment-item').data('id');
+
+                // Mark Comment As Read
+                $.post('/publisher/comment/'+parentCommentID+'/mark_comment_read/', {}, function(resp){
+                    console.log(resp);
+                }, 'json');
+
+            });
+
+            // Reply to Comment
+            $('#comment-side-bar').on('click', '.comment-item .reply-btn', function(e){
+                e.stopPropagation();
+                var parentCommentID = $(this).closest('.comment-item').data('id');
+                commentReplyModal.open(parentCommentID);
+            });
+
+            // Resolve Comment
+            $('#comment-side-bar').on('click', '.comment-item .resolve-btn', function(e){
+                e.stopPropagation();
+                var parentCommentID = $(this).closest('.comment-item').data('id');
+                console.log('Resolve CommentId: ', parentCommentID);
+
+                $.post('/publisher/comment/'+parentCommentID+'/resolve_comment/', {}, function(resp){
+                    console.log(resp);
+                }, 'json');
+
+                $(this).closest('.comment-item').remove();
+            });
+
+            // Create New Comment
+            $('.new-comment-btn').click(function(e){
+                newCommentModal.open();
+            });
+
+            $('#comment-side-bar-toggle').click(function(){
+                $('#comment-side-bar').animate({right:'0px'}, 500);
+            });
+
+            $('#comment-side-bar .close-btn').click(function() {
+                $('#comment-side-bar').animate({right:'-300px'}, 500);
+            });
+        });
+    </script>
+
+{% endblock %}

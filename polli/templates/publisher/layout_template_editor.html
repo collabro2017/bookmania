@@ -1,0 +1,74 @@
+{% extends "publisher/base/base_dashboard.html" %}
+{% load static %}
+{% load humanize %}
+
+
+<!-- Head -->
+{% block head %}
+    {{block.super}}
+    <script src="{% static 'js/layout_template_editor/actions.js' %}"></script>
+    <script src="{% static 'js/layout_template_editor/reducers.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/layout_template_editor/components/layout_editor.js' %}"></script>
+    <script type="text/babel" src="{% static 'js/page_editor/components/undo_manager.js' %}"></script>
+    <link href="https://fonts.googleapis.com/css?family=Baloo|Eagle+Lake|Lato|Open+Sans|Roboto" rel="stylesheet">
+{% endblock %}
+
+
+<!-- Body Classes -->
+{% block body_classes %}no-scroll{% endblock %}
+
+
+<!-- Content -->
+{% block content %}
+<div id='page-editor-content' class="content container-fluid">
+
+    <!-- Editor Controls -->
+    <div class="editor-controls">
+        <div id="undo-btn" class="page-editor-control-btn"></div>
+    </div>
+
+    <!-- Layout Editor -->
+    <div id="layout-editor-container" class="layout-editor"></div>
+
+</div>
+{% endblock %}
+
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+    <script type="text/babel">
+
+        // Setup Reducer & Store
+        let reducerList = {LayoutTemplateEditorReducer};
+        let combined = Redux.combineReducers(reducerList);
+        let store = Redux.createStore(combined);
+
+        //Defaults
+        let defaultImage = "{% static 'images/samples/grey_square_image_placeholder.jpg' %}";
+
+        // Editor Params
+        var templateID = {{template.id}};
+        var layout = {{layout|safe}};
+
+        // Load Page Content into State
+        store.dispatch(loadLayoutTemplate(templateID, layout));
+
+        // Render Layout Editor
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <LayoutEditorContainer defaultImage={defaultImage}></LayoutEditorContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('layout-editor-container')
+        );
+
+         // Render Undo Manager
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <UndoManagerContainer />
+            </ReactRedux.Provider>,
+            document.getElementById('undo-btn')
+        );
+    </script>
+
+{% endblock %}

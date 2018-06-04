@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+        <title>{% block title %}Dashboard{% endblock %}</title>
+
+        <!-- Jquery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+        <!-- Bootstrap -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+        <!-- Underscore JS -->
+        <script src="{% static 'vendors/underscore/underscore-min.js' %}"></script>
+
+        <!-- Font Awesome -->
+        <link href="{% static 'vendors/font-awesome/css/font-awesome.min.css' %}" rel="stylesheet"/>
+
+        <!-- Google Fonts -->
+        <link href="https://fonts.googleapis.com/css?family=Abril+Fatface|Anton|Diplomata+SC|Lobster|Pacifico|Raleway|Sirin+Stencil" rel="stylesheet">
+
+        <!-- Styles -->
+        <link href="{% static 'css/dashboard.css' %}" rel="stylesheet"/>
+
+        <!-- Load Babel -->
+        <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+        <!-- Load ReactJS -->
+        <script src="https://unpkg.com/react@15/dist/react.min.js"></script>
+        <script src="https://unpkg.com/react-dom@15/dist/react-dom.min.js"></script>
+
+        <!-- Load Redux -->
+        <script src="https://unpkg.com/redux@latest/dist/redux.min.js"></script>
+
+        <!-- Load React/Redux Binding -->
+        <script src="https://unpkg.com/react-redux@latest/dist/react-redux.min.js"></script>
+
+        <!-- HEAD BLOCK -->
+        {% block head %}{% endblock %}
+
+    </head>
+    <body class="{% block body_classes %}{% endblock %}">
+
+        <!-- Modals -->
+        {% block modals %}{% endblock %}
+
+        <!-- Header -->
+        <div class="header">
+            <img class='logo' src="{% static 'images/polli_logo.png' %}"/>
+
+            <!-- Right Control -->
+            <div class="right-controls">
+
+                <!-- Top Menu -->
+                {% block top_menu %}
+                <a class="nav-link" href="#"><i class="fa fa-book" aria-hidden="true"></i>Stories</a>
+                <a class="nav-link" href="#"><i class="fa fa-pie-chart" aria-hidden="true"></i>Analytics</a>
+                {% endblock %}
+
+                <!-- Super Nav -->
+                <div class="super-nav">
+                    <div class="drop-down-toggle">
+                        <img class='profile-pic' src="{{user.get_profile_pic}}"/>
+                        <span class="username">{{user.get_best_name}}</span>
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </div>
+                    <div class="drop-down-menu">
+                        <a href="#">Billing</a>
+                        <a href="{% url 'user_profile' %}">Profile</a>
+                        <a href="{% url 'logout' %}">Logout</a>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Main Section -->
+        <div class="main-section">
+
+            <!-- Side Menu -->
+            <div class="side-menu">
+
+                <!-- Section Heading -->
+                {% block section_heading %}
+                <div class="section-heading">
+                    <i class="fa fa-book"></i>
+                    <div class="name">Stories</div>
+                </div>
+                {% endblock %}
+
+                <!-- Section Menu -->
+                {% block section_menu %}
+                <div class="section-menu">
+
+                </div>
+                {% endblock %}
+
+            </div>
+
+            <!-- Content -->
+            <div class="content container-fluid">
+                {% block content %}{% endblock %}
+            </div>
+
+        </div>
+
+        <!-- JS Templates -->
+        {% block js_templates %}{% endblock %}
+
+        <!-- Reducers Block -->
+        {% block reducers %}{% endblock %}
+
+        <!-- JS Block -->
+        {% block js %}
+            <script>
+                function getCookie(name) {
+                    var cookieValue = null;
+                    if (document.cookie && document.cookie !== '') {
+                        var cookies = document.cookie.split(';');
+                        for (var i = 0; i < cookies.length; i++) {
+                            var cookie = jQuery.trim(cookies[i]);
+                            // Does this cookie string begin with the name we want?
+                            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+                var csrftoken = getCookie('csrftoken');
+
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                });
+            </script>
+        {% endblock %}
+
+    </body>
+
+</html>

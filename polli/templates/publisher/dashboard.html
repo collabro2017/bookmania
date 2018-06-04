@@ -1,0 +1,141 @@
+{% extends "publisher/base/base_dashboard.html" %}
+{% load static %}
+
+<!-- Head -->
+{% block head %}
+<script src="{% static 'js/publisher/dashboard.js' %}"></script>
+{% endblock %}
+
+<!-- Section Menu -->
+{% block section_menu %}
+<div class="section-menu">
+    <a href="#" class="upload-book-btn">New Story</a>
+    <a href="#">Analytics</a>
+    <a href="#">Comments</a>
+    <a href="{% url 'layout_template_list' %}">Templates</a>
+    <a href="#">Settings</a>
+</div>
+{% endblock %}
+
+<!-- Modals -->
+{% block modals %}
+<div id="delete-modal">
+    <label>Are You Sure?</label>
+    <div class="controls">
+        <div class="btn cancel-btn">Cancel</div>
+        <div class="btn delete-btn">Delete</div>
+    </div>
+</div>
+
+<div class="progress-modal">
+    <label>Uploading Book</label>
+    <div class="progress">
+        <div class="progress-bar progress-bar-info progress-bar-striped active" role="progressbar" style="width: 100%"></div>
+    </div>
+</div>
+
+<div id="new-book-modal">
+    <div class="heading">
+        <div class="name">New Story</div>
+        <i class="fa fa-times close-btn" aria-hidden="true"></i>
+    </div>
+    <input type="text" class="book-name" placeholder="Name"/>
+    <input type="text" class="author" placeholder="Author"/>
+    <textarea class="description" placeholder="Description"></textarea>
+
+    <div class="file-selector">
+        <i class="fa fa-file-pdf-o" aria-hidden="true"></i>
+        <label>Select PDF</label>
+    </div>
+    <select class="layout-select">
+        <option value="">-- Layout --</option>
+        {% for t in templates %}
+            <option value="{{t.id}}">{{t.name}}</option>
+        {% endfor %}
+    </select>
+    <input type="file" class="book-pdf-input"/>
+
+    <select class="translation-select">
+        <option value="">-- Translation --</option>
+        <option value="spanish">Spanish</option>
+        <option value="french">French</option>
+        <option value="italian">Italian</option>
+        <option value="russian">Russian</option>
+    </select>
+
+    <button class="btn btn-info save-btn">Save</button>
+</div>
+{% endblock %}
+
+
+<!-- Content -->
+{% block content %}
+<div class="row book-grid">
+
+    <!-- Book List -->
+    {% for book in books %}
+    <div class="col-md-3 book" data-id="{{book.id}}">
+        <div class="cover-image-wrapper">
+
+            <div class="top-status-bar">
+
+                {% if book.unresolved_comments > 0 %}
+                <span class="status-item">
+                    <span class="new-icon"></span>
+                    <i class="fa fa-comment"></i>
+                    <span class="value">{{book.unresolved_comments}}</span>
+                </span>
+                {% endif %}
+
+            </div>
+
+            <div class="status-wrap">
+                <div class="status blue-status">Draft</div>
+            </div>
+
+            <div class="overlay">
+                <a class="btn edit-btn" href="{% url 'publisher_general_editor' book.id %}">
+                    <i class="glyphicon glyphicon-pencil"></i>
+                    <span>Edit</span>
+                </a>
+                <button class="btn delete-btn">
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+            </div>
+            {% if book.cover_thumbnail %}
+            <img class="cover-image" src="{{book.cover_thumbnail.url}}"/>
+            {% endif %}
+        </div>
+        <div class="name">{{book.name|title}}</div>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}
+
+
+<!-- JS Templates -->
+{% block js_templates %}
+<script id="book-template" type="template/javascript">
+    <div class="col-md-3 book" style="display: none;" data-id="<%= id %>">
+        <div class="cover-image-wrapper">
+            <div class="status-wrap">
+                <div class="status blue-status">Draft</div>
+            </div>
+            <div class="overlay">
+                <a class="btn edit-btn" href="/publisher/editor/<%= id %>/general/">
+                    <i class="glyphicon glyphicon-pencil"></i>
+                    <span>Edit</span>
+                </a>
+                <button class="btn delete-btn">
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+            </div>
+            <img class="cover-image" src="<%= cover_image %>"/>
+        </div>
+        <div class="name"><%= name %></div>
+    </div>
+</script>
+{% endblock %}

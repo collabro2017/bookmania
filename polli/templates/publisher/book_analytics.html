@@ -1,0 +1,40 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+
+<!-- Content -->
+{% block content %}
+<div class="row">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="fa fa-pie-chart"></i>
+        <span>Analytics Page</span>
+    </div>
+
+    <!-- Panel Container -->
+    <div class="panel-container row">
+
+        <!-- Total Downloads -->
+        <div class="value-panel-wrap col-md-3">
+            <div class="value-panel">
+                <i class="fa fa-cloud-download" aria-hidden="true"></i>
+                <label>{{total_downloads}}</label>
+                <div class="sub-heading">Total Downloads</div>
+            </div>
+            <img src="{% static 'images/samples/empty_square.jpg' %}"/>
+        </div>
+
+        <!-- Average Rating -->
+        <div class="value-panel-wrap col-md-3">
+            <div class="value-panel">
+                <i class="fa fa-star" aria-hidden="true"></i>
+                <label>{{book.ave_rating}}</label>
+                <div class="sub-heading">Average Rating</div>
+            </div>
+            <img src="{% static 'images/samples/empty_square.jpg' %}"/>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

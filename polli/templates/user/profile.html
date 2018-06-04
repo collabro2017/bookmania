@@ -1,0 +1,37 @@
+{% extends "user/base/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div id="profile-page" class="row">
+    <div class="content-heading">
+        <i class="fa fa-user-circle-o"></i>
+        <span>User Profile</span>
+    </div>
+
+    <div id="profile-editor" class="form-wrap"></div>
+</div>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+    <script type="text/babel" src="{% static 'js/user/components/profile_editor.js' %}"></script>
+    <script type="text/babel">
+        $(document).ready(function(){
+            var user = {
+                'profile_pic': '{{user.get_profile_pic}}',
+                'first_name': '{{user.first_name}}',
+                'last_name': '{{user.last_name}}',
+                'email': '{{user.email}}',
+                'phone': '{{user.phone}}'
+            };
+
+            // Render Profile Editor
+            ReactDOM.render(
+                <ProfileEditor user={user}></ProfileEditor>,
+                document.getElementById('profile-editor')
+            );
+        });
+    </script>
+
+{% endblock %}

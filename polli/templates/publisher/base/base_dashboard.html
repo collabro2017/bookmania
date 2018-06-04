@@ -1,0 +1,27 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+ <!-- Top Menu -->
+{% block top_menu %}
+<a class="nav-link" href="{% url 'publisher_dashboard' %}"><i class="fa fa-book" aria-hidden="true"></i>Stories</a>
+<a class="nav-link" href="#"><i class="fa fa-pie-chart" aria-hidden="true"></i>Analytics</a>
+{% endblock %}
+
+<!-- Section Heading -->
+{% block section_heading %}
+<div class="section-heading">
+    <i class="fa fa-book"></i>
+    <div class="name">Stories</div>
+</div>
+{% endblock %}
+
+<!-- Section Menu -->
+{% block section_menu %}
+<div class="section-menu">
+    <a href="{% url 'publisher_dashboard' %}">Stories</a>
+    <a href="#">Analytics</a>
+    <a href="#">Comments</a>
+    <a href="{% url 'layout_template_list' %}">Templates</a>
+    <a href="#">Settings</a>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "registration/base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Password Reset{% endblock %}
+
+{% block content %}
+
+    {% if form.errors %}
+    <div class="alert alert-warning alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <span>There were form errors</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'password_reset' %}">
+        {% csrf_token %}
+
+         <div class="form-group">
+            {{form.email|add_class:"form-control"|attr:"placeholder:Email"}}
+        </div>
+
+        <input class="btn btn-info" type="submit" value="Reset Password" />
+
+    </form>
+
+{% endblock %}

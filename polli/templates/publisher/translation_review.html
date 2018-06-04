@@ -1,0 +1,144 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+
+<!-- Modals -->
+{% block modals %}
+    {{block.super}}
+{% endblock %}
+
+<!-- Content -->
+{% block content %}
+<div id="translations-page" class="row">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="fa fa-comments" aria-hidden="true"></i>
+        <span>Translation Review</span>
+        <!--
+        <span class="new-btn" data-toggle="modal" data-target="#lang-select-modal">
+            <i class="fa fa-plus" aria-hidden="true"></i>
+            <span>New Translations</span>
+        </span>
+        -->
+    </div>
+
+    <!-- Review List -->
+    <div id="review-list-container"></div>
+
+</div>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script type="text/babel">
+        var bookID = {{book.id}};
+        var translationID = {{translation.id}};
+        var lines = {{lines|safe}};
+
+        class ReviewItem extends React.Component{
+            constructor(props){
+                super(props);
+                this.state = {
+                    line: this.props.line,
+                    showEditor: false,
+                    complete: this.props.line['ReviewStatus']=='complete'
+                };
+
+                this.showEditor = this.showEditor.bind(this);
+                this.updateText = this.updateText.bind(this);
+                this.saveChanges = this.saveChanges.bind(this);
+                this.save = this.save.bind(this);
+                this.toggleCompletion = this.toggleCompletion.bind(this);
+            }
+
+            showEditor(){
+                this.setState({showEditor: true});
+            }
+
+            updateText(event){
+                var line = this.state.line;
+                line['L2'] = event.target.value;
+                this.setState({line: line})
+            }
+
+            save(complete){
+                var line = this.state.line;
+                var params = {
+                    'page_num': line['Page'],
+                    'line_num': line['Line'],
+                    'l2': line['L2'],
+                    'complete': complete
+                };
+
+                var updateUrl = '/publisher/translation/'+this.props.translationID+'/update_translation_review/';
+                $.post(updateUrl, params, function(resp){
+                    console.log(resp);
+                }, 'json');
+            }
+
+            saveChanges(){
+                console.log('save changes');
+                this.setState({showEditor: false});
+                this.save(this.state.complete);
+            }
+
+            toggleCompletion(){
+                console.log('toggle completion');
+                var complete = !this.state.complete;
+                this.setState({complete: complete});
+                this.save(complete);
+            }
+
+            render(){
+                let completeBtn = (<div className="complete-btn" onClick={this.toggleCompletion}>
+                                        <i className="fa fa-check-circle-o"></i>
+                                    </div>);
+
+                if(this.state.complete){
+                    completeBtn = (<div className="complete-btn active" onClick={this.toggleCompletion}>
+                                        <i className="fa fa-check-circle-o"></i>
+                                    </div>);
+                }
+
+                return (
+                    <div className="review-item">
+                        <div className="line-editor">
+                            <label>{this.state.line['L1']}</label>
+                        </div>
+                        <div className="line-editor">
+                            <label>{this.state.line['L2']}</label>
+                            <i className="fa fa-pencil-square-o edit-btn" onClick={this.showEditor}></i>
+                            { this.state.showEditor &&
+                                <textarea className="line-input"
+                                    onChange={(e)=>this.updateText(e)}
+                                    onBlur={this.saveChanges}>{this.state.line['L2']}
+                                    </textarea>
+                            }
+                        </div>
+                        {completeBtn}
+                    </div>
+                );
+            }
+        }
+
+        class ReviewList extends React.Component{
+
+            render(){
+                var translationID = this.props.translationID;
+                let reviewItems = this.props.lines.map(function(line){
+                    return <ReviewItem line={line} translationID={translationID}/>
+                });
+
+                return (
+                    <div className="review-list">
+                        {reviewItems}
+                    </div>
+                );
+            }
+        }
+
+        ReactDOM.render(<ReviewList lines={lines} translationID={translationID}/>, document.getElementById('review-list-container'));
+    </script>
+{% endblock %}

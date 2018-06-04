@@ -1,0 +1,58 @@
+body{
+    padding: 0px;
+    margin: 0px;
+    min-height: 100%;
+    width: 100%;
+    background: #000;
+}
+
+.registration-page{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.registration-page::before{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: .2;
+    z-index: -1;
+    background: url(../images/backgrounds/kids.jpg);
+    background-size: cover;
+}
+
+
+.registration-page .content{
+    text-align: center;
+    width: 220px;
+}
+
+.registration-page .content .logo{
+    width: 150px;
+    margin-bottom: 12px;
+}
+
+.registration-page .content .form-control{
+
+}
+
+.registration-page .content .btn{
+    outline: none;
+    text-transform: capitalize;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.registration-page .errorlist{
+    padding: 0px;
+    list-style: none;
+    margin: 0px;
+}

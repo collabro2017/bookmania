@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Get Arguments
+TRANSLATION_ID=$1
+
+L1_CODE=$2
+L1_FILE=$3
+
+L2_CODE=$4
+L2_FILE=$5
+
+chmod 777 $L1_FILE
+chmod 777 $L2_FILE
+
+# Create Output Directories
+OUTPUT_SOURCE_DIR="/tmp/output_source_$1"
+OUTPUT_FINAL_DIR="/tmp/output_final_$1"
+mkdir $OUTPUT_SOURCE_DIR
+mkdir $OUTPUT_FINAL_DIR
+chmod 777 $OUTPUT_SOURCE_DIR
+chmod 777 $OUTPUT_FINAL_DIR
+
+# TOKENIZE
+L1_TOKEN_FILE=$OUTPUT_SOURCE_DIR/L1.tok
+L2_TOKEN_FILE=$OUTPUT_SOURCE_DIR/L2.tok
+chmod 777 $OUTPUT_SOURCE_DIR
+chmod 777 $OUTPUT_FINAL_DIR
+
+sudo $MOSES/scripts/tokenizer/tokenizer.perl -l $L1_CODE < $L1_FILE > $L1_TOKEN_FILE
+sudo $MOSES/scripts/tokenizer/tokenizer.perl -l $L2_CODE < $L2_FILE > $L2_TOKEN_FILE
+
+# ALIGN
+sudo $GIZA/GIZA++-v2/plain2snt.out $L1_TOKEN_FILE $L2_TOKEN_FILE
+
+L1_SNT_FILE=$OUTPUT_SOURCE_DIR/L1_L2.snt
+L2_SNT_FILE=$OUTPUT_SOURCE_DIR/L2_L1.snt
+chmod 777 $L1_SNT_FILE
+chmod 777 $L2_SNT_FILE
+
+L1_VCB_FILE=$OUTPUT_SOURCE_DIR/L1.vcb
+L2_VCB_FILE=$OUTPUT_SOURCE_DIR/L2.vcb
+chmod 777 $L1_VCB_FILE
+chmod 777 $L2_VCB_FILE
+
+L1_CORP_FILE=$OUTPUT_SOURCE_DIR/L1_corp.cooc
+L2_CORP_FILE=$OUTPUT_SOURCE_DIR/L2_corp.cooc
+chmod 777 $L1_CORP_FILE
+chmod 777 $L2_CORP_FILE
+
+sudo $GIZA/GIZA++-v2/snt2cooc.out $L1_VCB_FILE $L2_VCB_FILE $L1_SNT_FILE > $L1_CORP_FILE
+sudo $GIZA/GIZA++-v2/snt2cooc.out $L2_VCB_FILE $L1_VCB_FILE $L2_SNT_FILE > $L2_CORP_FILE
+
+sudo $GIZA/GIZA++-v2/GIZA++ -S $L1_VCB_FILE -T $L2_VCB_FILE -C $L1_SNT_FILE -CoocurrenceFile $L1_CORP_FILE -o L1 -outputpath $OUTPUT_SOURCE_DIR
+sudo $GIZA/GIZA++-v2/GIZA++ -S $L2_VCB_FILE -T $L1_VCB_FILE -C $L2_SNT_FILE -CoocurrenceFile $L2_CORP_FILE -o L2 -outputpath $OUTPUT_SOURCE_DIR
+
+# Save L1 & L2 Output Files
+mv $OUTPUT_SOURCE_DIR/L1.A3.final $OUTPUT_FINAL_DIR
+mv $OUTPUT_SOURCE_DIR/L2.A3.final $OUTPUT_FINAL_DIR
+
+# Clean Up
+rm -rf $OUTPUT_SOURCE_DIR
+rm -rf $L1_FILE
+rm -rf $L2_FILE
+
+# Run Python Post-Processor
+L1_OUTPUT_FILE=$OUTPUT_FINAL_DIR/L1.A3.final
+L2_OUTPUT_FILE=$OUTPUT_FINAL_DIR/L2.A3.final
+
+#/opt/python/run/venv/bin/python post_processor.py $TRANSLATION_ID $L1_OUTPUT_FILE $L2_OUTPUT_FILE

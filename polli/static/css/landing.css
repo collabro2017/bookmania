@@ -1,0 +1,125 @@
+body{
+    padding: 0px;
+    margin: 0px;
+    min-height: 100%;
+    width: 100%;
+    background: #000;
+}
+
+.landing-page{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+.landing-page::before{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: .2;
+    z-index: -1;
+    background: url(../images/backgrounds/kids.jpg);
+    background-size: cover;
+}
+
+.landing-page .header{
+    width: 100%;
+    padding: 15px 15px;
+}
+
+.landing-page .header .logo{
+    height: 40px;
+}
+
+.landing-page .header .right-btn-group{
+    float: right;
+    margin-top: 3px;
+}
+
+.landing-page .header .btn{
+    color: rgba(255, 255, 255, 0.6);
+    margin-left: 7px;
+}
+
+.landing-page .header .btn:hover{
+    color: #a3d9f1;
+}
+
+.landing-page .header .btn i{
+    margin-right: 5px;
+}
+
+.landing-page .header .btn-info{
+    border: none;
+    padding: 7px 12px;
+}
+
+.landing-page .header .btn-info:hover{
+    color: #fff;
+}
+
+.landing-page .content{
+    text-align: center;
+    color: #fff;
+}
+
+.landing-page .content h1{
+    font-size: 48px;
+    font-family: 'Anton', sans-serif;
+}
+
+.landing-page .content p{
+    width: 590px;
+    margin: auto;
+    font-size: 16px;
+}
+
+.landing-page .content .download-btns{
+    margin-top: 15px;
+}
+
+.landing-page .content .download-btns .btn{
+    width: 100px;
+    margin: 0px 5px;
+}
+
+.landing-page .content .download-btns .btn:hover{
+
+}
+
+.landing-page .content .download-btns .btn i{
+    margin-right: 5px;
+}
+
+.landing-page .footer{
+    width: 100%;
+    padding: 15px 15px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.landing-page .footer .copyright{
+    display: inline-block;
+    line-height: 40px;
+}
+
+.landing-page .footer .social-links{
+    float: right;
+}
+
+.landing-page .footer .social-links a{
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 30px;
+    margin-left: 10px;
+}
+
+.landing-page .footer .social-links a:hover{
+    color: #a3d9f1;
+}

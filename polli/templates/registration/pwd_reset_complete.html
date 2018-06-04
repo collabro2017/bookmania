@@ -1,0 +1,16 @@
+{% extends "registration/base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Password Reset Complete{% endblock %}
+
+{% block content %}
+
+    <div class="alert alert-info alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <span>Password Reset Complete</span>
+    </div>
+
+    <a class="btn btn-info" href="{% url 'login' %}">Login</a>
+
+{% endblock %}

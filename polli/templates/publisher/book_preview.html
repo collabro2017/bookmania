@@ -1,0 +1,119 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+{% load stage_class %}
+
+<!-- Head -->
+{% block head %}
+    {{block.super}}
+    <script src="{% static 'vendors/bxslider/jquery.bxslider.min.js' %}"></script>
+    <link href="{% static 'vendors/bxslider/jquery.bxslider.min.css' %}" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css?family=Baloo|Eagle+Lake|Lato|Open+Sans|Roboto" rel="stylesheet">
+{% endblock %}
+
+<!-- Content -->
+{% block content %}
+<div id="preview-page" class="row">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="fa fa-comments" aria-hidden="true"></i>
+        <span>Book Preview</span>
+
+        <!-- Blend Selector -->
+        <select class="blend-selector">
+            <option value="1">Blend 1</option>
+            <option value="2">Blend 2</option>
+            <option value="3">Blend 3</option>
+            <option value="4">Blend 4</option>
+            <option value="5">Blend 5</option>
+        </select>
+
+    </div>
+
+    <!-- Page Slider -->
+    <div class="page-slider">
+        <ul class="bxslider">
+
+            {% for p in pages %}
+            <li class="slide" style="padding: {{p.content.style.padding}}; flex-direction: {{p.content.style.flexDirection}}; background: {{p.content.style.backgroundColor}}">
+
+                {% for e in p.content.elements %}
+                    {% if e.type == 'text' %}
+                        <div class="text-element page-element" data-blends="{{e.blends}}" style="font-family: {{e.style.fontFamily}}; align-items: {{e.style.alignItems}}; justify-content: {{e.style.justifyContent}}; color: {{e.style.color}}; font-size: {{e.style.fontSize}}px;">
+                            <div class="text">{{e.blends}}</div>
+                        </div>
+                    {% else %}
+                        <div class="image-element page-element" style="flex: {{e.containerStyle.flex}}; text-align: {{e.containerStyle.textAlign}}; align-self: {{e.containerStyle.alignSelf}};">
+                            <div class="wrap">
+                                <img src="{{e.data.url}}"/>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script type="text/babel">
+        var bookID = {{book.id}};
+        var blendLevel = 1;
+        var allBlends = [];
+
+        $(document).ready(function(){
+
+            // Logic for Blend Rendering
+            function renderBlendLevel(){
+                console.log('render blend level');
+                $('.text-element').each(function(){
+                    var blends = $(this).data('blends');
+                    var blendItems = blends.match(/\[[^\|\n]*\|[^\|\n]*\|[^\|\n]*\]/g);
+                    var blendedParts = [];
+
+                    if(blendItems){
+                        blendedParts = blendItems.map(function(item){
+                            var parts = item.replace('[', '').replace(']', '').split('|');
+                            var toggleLevel = parseInt(parts[2]);
+                            if(blendLevel >= toggleLevel){
+                                return parts[1];
+                            }else{
+                                return parts[0];
+                            }
+                        });
+                    }
+
+                    var blendedString = blendedParts.join(' ').trim();
+                    $(this).children('.text').text(blendedString);
+
+                    //console.log('blended string: ', blendedString);
+                    allBlends.push(blends);
+                });
+            }
+
+            // Blend Selection
+            $('.blend-selector').change(function(){
+                blendLevel = parseInt($(this).val());
+                renderBlendLevel();
+                console.log('blend level changed: ', blendLevel);
+            });
+
+            // Initialize BX Slider
+            $('.bxslider').bxSlider({
+                pagerType: 'short',
+                onSliderLoad: function(){
+                    console.log('Slider Done Loading');
+                    renderBlendLevel();
+                    $('.page-slider').css('visibility', 'visible');
+                }
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "publisher/base/base_dashboard.html" %}
+{% load static %}
+
+
+<!-- Head -->
+{% block head %}
+    {{block.super}}
+    <link href="https://fonts.googleapis.com/css?family=Baloo|Eagle+Lake|Lato|Open+Sans|Roboto" rel="stylesheet">
+{% endblock %}
+
+
+<!-- Modals -->
+{% block modals %}
+<div id="delete-modal">
+    <label>Are You Sure?</label>
+    <div class="controls">
+        <div class="btn cancel-btn">Cancel</div>
+        <div class="btn delete-btn">Delete</div>
+    </div>
+</div>
+
+<div id="new-book-modal" class="new-template-modal">
+    <div class="heading">
+        <div class="name">New Layout</div>
+        <i class="fa fa-times close-btn" aria-hidden="true"></i>
+    </div>
+    <input type="text" class="book-name" placeholder="Name"/>
+    <button class="btn btn-info save-btn">Save</button>
+</div>
+{% endblock %}
+
+
+<!-- Content -->
+{% block content %}
+<div class="row book-grid layout-grid">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="glyphicon glyphicon-book"></i>
+        <span>Layout Templates</span>
+        <span class="btn btn-info new-btn">
+            <i class="glyphicon glyphicon-file"></i>
+            <span>New Layout</span>
+        </span>
+    </div>
+
+    <!-- Templates -->
+    {% for t in templates %}
+    <div class="col-md-3 book page" data-id="{{t.id}}">
+        <div class="cover-image-wrapper">
+            <div class="overlay">
+                <a class="btn edit-btn" href="{% url 'layout_template_editor' t.id %}">
+                    <i class="glyphicon glyphicon-pencil"></i>
+                </a>
+                <button class="btn delete-btn">
+                    <i class="glyphicon glyphicon-trash"></i>
+                </button>
+            </div>
+
+            <!-- Display Layout Preview If Elements Exists -->
+            {% if t.layout.elements %}
+            <div class="layout-preview" style="flex-direction: {{t.layout.style.flexDirection}}; background: {{t.layout.style.backgroundColor}}">
+                {% for e in t.layout.elements %}
+                    {% if e.type == 'text' %}
+                        <div class="text-element page-element" style="font-family: {{e.style.fontFamily}}; align-items: {{e.style.alignItems}}; justify-content: {{e.style.justifyContent}}; color: {{e.style.color}};">
+                            <div>{{e.data.english}}</div>
+                        </div>
+                    {% else %}
+                        <div class="image-element page-element" style="flex: {{e.containerStyle.flex}}; text-align: {{e.containerStyle.textAlign}}; align-self: {{e.containerStyle.alignSelf}};">
+                            <div class="wrap">
+                                <img src="{{e.data.url}}"/>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <img class="cover-image" src="{{t.get_thumbnail}}"/>
+        </div>
+
+        <label>{{t.name}}</label>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}
+
+
+<!-- JS Templates -->
+{% block js_templates %}
+<script id="layout-template" type="template/javascript">
+    <div class="col-md-3 book page" style="display: none;" data-id="<%= id %>">
+        <div class="cover-image-wrapper">
+            <div class="overlay">
+                <a class="btn edit-btn" href="/publisher/layout-template/editor/<%= id %>/">
+                    <i class="glyphicon glyphicon-pencil"></i>
+                </a>
+                <button class="btn delete-btn">
+                    <i class="glyphicon glyphicon-trash"></i>
+                </button>
+            </div>
+            <img class="cover-image" src="<%= image %>"/>
+        </div>
+        <label><%= name %></label>
+    </div>
+</script>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script>
+        $( function() {
+
+            // New Template - Click Handler
+            $('.content-heading .new-btn').click(function(){
+                $(".new-template-modal input").val('');
+                $('.new-template-modal').fadeIn();
+            });
+
+            // Close
+            $('.new-template-modal .close-btn').click(function(){
+                $('.new-template-modal').fadeOut();
+            });
+
+            // Save
+            $('.new-template-modal .save-btn').click(function(){
+                console.log('Save Template');
+                $('.new-template-modal').fadeOut();
+                var name = $(".new-template-modal input").val();
+                var params = {
+                    name: name
+                };
+
+                $.post('/publisher/layout-template/', params, function(data){
+                    var template = _.template($('#layout-template').html());
+                    var $layout = $(template(data));
+                    $('.layout-grid').append($layout);
+                    $layout.fadeIn();
+                }, 'json');
+            });
+
+            // Book Deletion
+            var deleteLayoutID = null;
+            $('#delete-modal .delete-btn').click(function(){
+                console.log('confirm delete');
+                $('#delete-modal').fadeOut();
+                jQuery.ajax ({
+                    url: '/publisher/layout-template/'+deleteLayoutID+'/',
+                    type: "DELETE",
+                    success: function(resp){
+                        console.log('Delete Complete');
+                    }
+                });
+                $(".page[data-id='"+deleteLayoutID+"']").remove();
+            });
+
+            $('#delete-modal .cancel-btn').click(function(){
+                console.log('cancel delete');
+                $('#delete-modal').fadeOut();
+            });
+
+            $('.layout-grid').delegate('.delete-btn', 'click',  function(){
+                var $item = $(this).closest('.page');
+                deleteLayoutID = $item.data('id');
+                console.log('deleting: ', deleteLayoutID);
+                $('#delete-modal').fadeIn();
+            });
+
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,505 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+{% load stage_class %}
+
+<!-- Modals -->
+{% block modals %}
+    {{block.super}}
+
+    <!-- Language Selection Modal -->
+    <div class="modal fade basic-modal" id="lang-select-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">
+                        <i class="fa fa-comments" aria-hidden="true"></i>
+                        <span>New Translation</span>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <select id="language-select">
+                        {% for lang in languages %}
+                            <option>{{lang}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default cancel-btn" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary submit-btn">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Translation Rejection Modal -->
+    <div class="modal fade basic-modal" id="translation-rejection-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">
+                        <i class="fa fa-comments" aria-hidden="true"></i>
+                        <span>Reject Translation</span>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <textarea placeholder="Rejection Reason"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default cancel-btn" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary submit-btn">Reject</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+<!-- Content -->
+{% block content %}
+<div id="translations-page" class="row">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="fa fa-comments" aria-hidden="true"></i>
+        <span>Translations</span>
+
+        <span class="new-btn" data-toggle="modal" data-target="#lang-select-modal">
+            <i class="fa fa-plus" aria-hidden="true"></i>
+            <span>New Translations</span>
+        </span>
+    </div>
+
+    <!-- Translation Input -->
+    <input id="translation-upload-input" type="file" style="display:none;"/>
+
+    <!-- Translation List -->
+    <div id="translation-list">
+
+        {% for t in translations %}
+        <div class="translation" data-id="{{t.id}}">
+            <!-- Language -->
+            <div class="language">{{t.language}}</div>
+
+            {% if user.user_type == 'staff' %}
+                <!-- Action Menu -->
+                <div class="dd-menu">
+                    <div class="toggle">
+                        <span>Menu</span>
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </div>
+                    <div class="menu">
+                        <span class="item approve-translation-btn">Approve</span>
+                        <span class="item reject-translation-btn">Reject</span>
+                        <a class="item translation-csv-btn" href="/publisher/translation/{{t.id}}/get_translation_csv/" download>Translation CSV</a>
+                        <span class="item upload-translation-btn">Upload Translation</span>
+                        <a class="item" href="{% url 'review_translation' t.id %}">Review Translation</a>
+                        <span class="item generate-blend-btn">Generate Blend</span>
+                        <a class="item" href="{% url 'review_blend' t.id %}">Review Blend</a>
+                        <!--<span class="item publish-btn">Publish</span>-->
+                        {% if t.status == 'blend_review' or t.status == 'published' %}
+                            <a class='item' href="{% url 'book_preview' book.id t.language %}">Book Preview</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                {% if t.status == 'requested' %}
+                    <div class="header-controls">
+                        <div class="header-status blue-status">Pending</div>
+                    </div>
+                {% elif t.status == 'rejected' %}
+                    <div class="header-controls">
+                        <div class="header-status red-status">Rejected</div>
+                    </div>
+                {% else %}
+                    <div class="header-controls">
+                        {% if t.status == 'blend_review' or t.status == 'published' %}
+                            <a class='header-status preview-btn' href="{% url 'book_preview' book.id t.language %}">Book Preview</a>
+                        {% endif %}
+
+                        {% if t.status == 'blend_review' and t.status != 'published' %}
+                            <div class="header-status publish-btn">Publish</div>
+                        {% endif %}
+
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if user.user_type == 'staff' or t.status != 'requested' and t.status != 'rejected' %}
+                <!-- Progress Status -->
+                <div class="progress-status">
+
+                    <!-- Stage Statuses -->
+                    <!-- red, green, yellow -->
+                    <div class="stage-list">
+                        <div class="stage requested-stage {% get_stage_class t 'requested' %}">
+                            <span class="name">Requested</span>
+                        </div>
+
+                        <div class="stage approved-stage {% get_stage_class t 'approved' %}">
+                            <span class="name">Approved</span>
+                        </div>
+
+                        <div class="stage translation-stage {% get_stage_class t 'translation' %}">
+                            <span class="name">Translation</span>
+                        </div>
+
+                        <div class="stage translation-review-stage {% get_stage_class t 'translation_review' %}">
+                            <span class="name">Translation Review</span>
+                        </div>
+
+                        <div class="stage blend-stage {% get_stage_class t 'blend' %}">
+                            <span class="name">
+                                <span>Blend</span>
+                                {% if t.blend_status == 'pending' %}
+                                    <span class="status pending">Pending</span>
+                                {% elif t.blend_status == 'processing' %}
+                                    <span class="status processing">Progress {{t.blend_percentage}}%</span>
+                                {% elif t.blend_status == 'complete' and t.status == 'blend' %}
+                                    <span class="status processing">Complete</span>
+                                {% endif %}
+                            </span>
+
+                        </div>
+
+                        <div class="stage blend-review-stage {% get_stage_class t 'blend_review' %}">
+                            <span class="name">Blend Review</span>
+                        </div>
+
+                        <div class="stage published-stage {% get_stage_class t 'published' %}">
+                            <span class="name">Published</span>
+                        </div>
+
+                        <div class="completion-bar" style="width: {{t.get_percentage_completed}}%;"></div>
+
+                    </div>
+
+                </div>
+            {% elif t.status == 'rejected' %}
+                <div class="rejection-msg">
+                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <p>{{t.rejection_reason}}</p>
+                    <div class="btn delete-btn">Delete</div>
+                </div>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+</div>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script id="new-translation-template" type="text/template">
+        <div class="translation" data-id="<%= id %>">
+
+            <!-- Language -->
+            <div class="language"><%= language %></div>
+
+            {% if user.user_type == 'staff' %}
+                <!-- Action Menu -->
+                <div class="dd-menu">
+                    <div class="toggle">
+                        <span>Menu</span>
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </div>
+                    <div class="menu">
+                        <span class="item approve-translation-btn">Approve</span>
+                        <span class="item reject-translation-btn">Reject</span>
+                        <a class="item translation-csv-btn" href="/publisher/translation/<%= id %>/get_translation_csv/" download>Translation CSV</a>
+                        <span class="item upload-translation-btn">Upload Translation</span>
+                        <a class="item" href="/publisher/review-translation/<%= id %>/">Review Translation</a>
+                        <span class="item generate-blend-btn">Generate Blend</span>
+                        <!--<span class="item publish-btn">Publish</span>-->
+                    </div>
+                </div>
+            {% else %}
+                <div class="header-controls">
+                    <div class="header-status blue-status">Pending</div>
+                </div>
+            {% endif %}
+
+            {% if user.user_type == 'staff' %}
+                <!-- Progress Status -->
+                <div class="progress-status">
+
+                    <!-- Stage Statuses -->
+                    <!-- red, green, yellow -->
+                    <div class="stage-list">
+                        <div class="stage requested-stage green">
+                            <span class="name">Requested</span>
+                        </div>
+
+                        <div class="stage approved-stage">
+                            <span class="name">Approved</span>
+                        </div>
+
+                        <div class="stage translation-stage">
+                            <span class="name">Translation</span>
+                        </div>
+
+                        <div class="stage translation-review-stage">
+                            <span class="name">Translation Review</span>
+                        </div>
+
+                        <div class="stage blend-stage">
+                            <span class="name">Blend</span>
+                        </div>
+
+                        <div class="stage blend-review-stage">
+                            <span class="name">Blend Review</span>
+                        </div>
+
+                        <div class="stage published-stage">
+                            <span class="name">Published</span>
+                        </div>
+
+                        <div class="completion-bar" style="width: 0%;"></div>
+
+                    </div>
+
+                </div>
+            {% endif %}
+
+        </div>
+
+    </script>
+
+    <script type="text/babel">
+        var bookID = {{book.id}};
+        var translationID = null;
+
+        $(document).ready(function(){
+
+            // Translation Requests
+            $('#lang-select-modal .submit-btn').click(function(){
+                console.log('translation request complete');
+                var language = $('#language-select').val();
+                $('#lang-select-modal').modal('hide');
+                var template = _.template($('#new-translation-template').html());
+
+                var params = {
+                    book: bookID,
+                    language: language
+                };
+
+                var createTranslationUrl = '/publisher/translation/';
+                $.post(createTranslationUrl, params, function(resp){
+                    console.log(resp);
+                    var newTranslation = template(resp);
+                    $('#translation-list').append(newTranslation);
+                }, 'json');
+            });
+
+            // Approve Translation
+            $('#translation-list').on('click', '.approve-translation-btn', function(){
+                var tID = $(this).closest('.translation').data('id');
+                console.log('approve translation: ', tID);
+
+                var width = parseFloat($(".translation[data-id='"+tID+"'] .completion-bar").css('width').replace('px', ''));
+                var maxWidth = parseFloat($('.stage-list').css('width').replace('px', ''));
+                var dw = maxWidth/6;
+                var percent = width/maxWidth * 100;
+                if(percent<16){
+                    $(".translation[data-id='"+tID+"'] .completion-bar").animate({width: dw}, 1000, function(){
+                        $(".translation[data-id='"+tID+"'] .approved-stage").addClass('green');
+                    })
+                }
+
+                $.ajax({
+                    url: '/publisher/translation/'+tID+'/',
+                    type: 'PATCH',
+                    data: JSON.stringify({status: 'approved'}),
+                    processData: false,
+                    contentType: 'application/json',
+                    success: function(data, textStatus, jqXHR)
+                    {
+                        console.log(data);
+                    }
+                }, 'json');
+
+            });
+
+            // Reject Translation
+            $('#translation-list').on('click', '.reject-translation-btn', function(){
+                translationID = $(this).closest('.translation').data('id');
+                console.log('reject translation: ', translationID);
+
+                // Clear Fields
+                $('#translation-rejection-modal textarea').val('');
+
+                // Show Modal
+                $('#translation-rejection-modal').modal('show');
+            });
+
+            $('#translation-rejection-modal .submit-btn').click(function(){
+                console.log('translation rejection complete');
+                var rejectionReason = $('#translation-rejection-modal textarea').val();
+
+                // Hide Modal
+                $('#translation-rejection-modal').modal('hide');
+
+                // Remove Translation Request
+                $(".translation[data-id='"+translationID+"']").remove();
+
+                var params = {
+                    status: 'rejected',
+                    rejection_reason: rejectionReason
+                };
+                $.ajax({
+                    url: '/publisher/translation/'+translationID+'/',
+                    type: 'PATCH',
+                    data: JSON.stringify(params),
+                    processData: false,
+                    contentType: 'application/json',
+                    success: function(data, textStatus, jqXHR)
+                    {
+                        console.log(data);
+                    }
+                }, 'json');
+
+            });
+
+            // Publish Book
+            $('#translation-list').on('click', '.publish-btn', function(){
+                var tID = $(this).closest('.translation').data('id');
+
+                var params = {
+                    translation_id: tID
+                };
+
+                var width = parseFloat($(".translation[data-id='"+tID+"'] .completion-bar").css('width').replace('px', ''));
+                var maxWidth = parseFloat($('.stage-list').css('width').replace('px', ''));
+                var dw = maxWidth/6;
+                var percent = width/maxWidth * 100;
+                if(percent<96){
+                    $(".translation[data-id='"+tID+"'] .completion-bar").animate({width: dw*6}, 1000, function(){
+                        $(".translation[data-id='"+tID+"'] .published-stage").addClass('green');
+                    })
+                }
+
+                $.ajax({
+                    url: '/publisher/translation/'+tID+'/',
+                    type: 'PATCH',
+                    data: JSON.stringify({status: 'published'}),
+                    processData: false,
+                    contentType: 'application/json',
+                    success: function(data, textStatus, jqXHR)
+                    {
+                        console.log(data);
+                    }
+                }, 'json');
+
+            });
+
+            // Delete Translation
+            $('#translation-list').on('click', '.delete-btn', function(){
+                var tID = $(this).closest('.translation').data('id');
+                console.log('delete translation: ', tID);
+
+                $(this).closest('.translation').remove();
+
+                var params = {
+                    translation_id: tID
+                };
+
+                $.ajax({
+                    url: '/publisher/translation/'+tID+'/',
+                    type: 'DELETE',
+                    success: function(data, textStatus, jqXHR)
+                    {
+                        console.log('DELETION COMPLETE');
+                    }
+                }, 'json');
+
+            });
+
+
+            // Get Translation CSV
+            $('#translation-list').on('click', '.translation-csv-btn', function(){
+                var tID = $(this).closest('.translation').data('id');
+
+                var width = parseFloat($(".translation[data-id='"+tID+"'] .completion-bar").css('width').replace('px', ''));
+                var maxWidth = parseFloat($('.stage-list').css('width').replace('px', ''));
+                var dw = maxWidth/6;
+                var percent = width/maxWidth * 100;
+                if(percent<32){
+                    $(".translation[data-id='"+tID+"'] .completion-bar").animate({width: dw*2}, 1000, function(){
+                        $(".translation[data-id='"+tID+"'] .translation-stage").addClass('green');
+                    })
+                }
+            });
+
+            // Upload Translation
+            $('#translation-list').on('click', '.upload-translation-btn', function(){
+                translationID = $(this).closest('.translation').data('id');
+                $('#translation-upload-input').click();
+                console.log('upload translation csv: ', translationID);
+            });
+
+            $('#translation-upload-input').change(function(){
+                console.log('changed translation file');
+                var data = new FormData();
+                data.append('csv', $('#translation-upload-input')[0].files[0]);
+                data.append('translation_id', translationID);
+
+                var _this = this;
+                $.ajax({
+                    url: '/publisher/translation/'+translationID+'/upload_translation_csv/',
+                    type: 'POST',
+                    data: data,
+                    processData: false,
+                    contentType: false,
+                    success: function(data, textStatus, jqXHR)
+                    {
+                        console.log(data);
+                    }
+                }, 'json');
+
+                // Update Completion Bar
+                console.log('update completion bar');
+                var width = parseFloat($(".translation[data-id='"+translationID+"'] .completion-bar").css('width').replace('px', ''));
+                var maxWidth = parseFloat($('.stage-list').css('width').replace('px', ''));
+                var dw = maxWidth/6;
+                var percent = width/maxWidth * 100;
+                if(percent<48){
+                    $(".translation[data-id='"+translationID+"'] .completion-bar").animate({width: dw*3}, 1000, function(){
+                        $(".translation[data-id='"+translationID+"'] .translation-review-stage").addClass('green');
+                    })
+                }
+
+            });
+
+            // Generate Blend
+            $('#translation-list').on('click', '.generate-blend-btn', function(){
+                var tID = $(this).closest('.translation').data('id');
+                var params = {
+                    translation_id: tID
+                };
+
+                var width = parseFloat($(".translation[data-id='"+tID+"'] .completion-bar").css('width').replace('px', ''));
+                var maxWidth = parseFloat($('.stage-list').css('width').replace('px', ''));
+                var dw = maxWidth/6;
+                var percent = width/maxWidth * 100;
+                if(percent<64){
+                    $(".translation[data-id='"+tID+"'] .completion-bar").animate({width: dw*4}, 1000, function(){
+                        $(".translation[data-id='"+tID+"'] .blend-stage").addClass('green');
+                        $(".translation[data-id='"+tID+"'] .blend-stage .name").append("<span class='status pending'>Pending</span>");
+                    })
+                }
+
+                var blendRequestUrl = '/publisher/translation/'+tID+'/create_blend_request/';
+                $.post(blendRequestUrl, params, function(resp){
+                    console.log(resp);
+                }, 'json');
+            });
+        });
+    </script>
+{% endblock %}

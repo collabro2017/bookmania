@@ -1,0 +1,344 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+
+<!-- Modals -->
+{% block modals %}
+    {{block.super}}
+{% endblock %}
+
+<!-- Content -->
+{% block content %}
+<div id="translations-page" class="row">
+
+    <!-- Heading -->
+    <div class="content-heading">
+        <i class="fa fa-comments" aria-hidden="true"></i>
+        <span>Blend Review</span>
+    </div>
+
+    <!-- Blend Review -->
+    <div id="blend-review-container"></div>
+
+</div>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script type="text/babel">
+        var bookID = {{book.id}};
+        var translationID = {{translation.id}};
+        var lines = {{lines|safe}};
+
+
+        class BlendItem extends React.Component {
+            constructor(props){
+                super(props);
+
+                this.getText = this.getText.bind(this);
+                this.updateL1Text = this.updateL1Text.bind(this);
+                this.updateL2Text = this.updateL2Text.bind(this);
+                this.updateItemBlendLevel = this.updateItemBlendLevel.bind(this);
+                this.saveChanges = this.saveChanges.bind(this);
+            }
+
+            getText(){
+                var lineBlend = parseInt(this.props.blendLevel);
+                var itemBlend = parseInt(this.props.item.blendLevel);
+
+                if(itemBlend<=lineBlend){
+                    return this.props.item.L2;
+                }else{
+                    return this.props.item.L1;
+                }
+            }
+
+            updateL1Text(event){
+                this.props.updateL1Text(this.props.index, event.target.value);
+            }
+
+            updateL2Text(event){
+                this.props.updateL2Text(this.props.index, event.target.value);
+            }
+
+            updateItemBlendLevel(event){
+                this.props.updateItemBlendLevel(this.props.index, event.target.value);
+            }
+
+            saveChanges(){
+                console.log('Save the changes');
+                this.props.saveBlendItem();
+            }
+
+            render(){
+                if(!this.props.merging){
+                    return (
+                        <span className="blend-item">
+                            <span className="text">{this.getText()}</span>
+                            <div className="editor">
+                                <div className="input-group">
+                                    <label>L1</label>
+                                    <input type="text" value={this.props.item.L1} onChange={this.updateL1Text} onBlur={this.saveChanges}/>
+                                </div>
+                                <div className="input-group">
+                                    <label>L2</label>
+                                    <input type="text" value={this.props.item.L2} onChange={this.updateL2Text} onBlur={this.saveChanges}/>
+                                </div>
+                                <div className="control-group">
+                                    <select className="control-item" value={this.props.item.blendLevel} onChange={this.updateItemBlendLevel}>
+                                        <option value='1'>Blend 1</option>
+                                        <option value='2'>Blend 2</option>
+                                        <option value='3'>Blend 3</option>
+                                        <option value='4'>Blend 4</option>
+                                        <option value='5'>Blend 5</option>
+                                    </select>
+                                    <div className="control-item" onClick={()=>this.props.splitItem(this.props.index)}>Split</div>
+                                    <div className="control-item" onClick={()=>this.props.mergeBegin(this.props.index)}>Merge</div>
+                                </div>
+                            </div>
+                        </span>
+                    );
+                }else{
+                    return (
+                        <span className="blend-item merging" onClick={()=>this.props.mergeComplete(this.props.index)}>
+                            <span className="text">{this.getText()}</span>
+                        </span>
+                    );
+                }
+            }
+        }
+
+        class BlendLine extends React.Component {
+            constructor(props){
+                super(props);
+
+                // Get Blend Items
+                //console.log('line: ', this.props.line);
+                let blendParts = this.props.line['Blend'].match(/\[[^\|\n]*\|[^\|\n]*\|(\d)\]/g);
+                let blendItems = [];
+
+                if(blendParts){
+                    console.log('has blend parts');
+                    blendItems = blendParts.map(function(part){
+                        var itemData = part.replace('[', '').replace(']', '').split('|');
+                        var item = {
+                            L1: itemData[0],
+                            L2: itemData[1],
+                            blendLevel: itemData[2]
+                        };
+                        return item;
+                    });
+                }else{
+                    console.log('no blend parts');
+                }
+
+                this.state = {
+                    blendLevel: 1,
+                    line: this.props.line,
+                    blendItems: blendItems,
+                    complete: this.props.line['BlendStatus']=='complete',
+                    merging: false,
+                    mergeTarget: null
+                }
+
+                this.mergeBegin = this.mergeBegin.bind(this);
+                this.mergeComplete = this.mergeComplete.bind(this);
+                this.splitItem = this.splitItem.bind(this);
+                this.changeBlend = this.changeBlend.bind(this);
+                this.updateL1Text = this.updateL1Text.bind(this);
+                this.updateL2Text = this.updateL2Text.bind(this);
+                this.updateItemBlendLevel = this.updateItemBlendLevel.bind(this);
+                this.saveBlendItem = this.saveBlendItem.bind(this);
+                this.save = this.save.bind(this);
+                this.toggleCompletion = this.toggleCompletion.bind(this);
+            }
+
+            mergeBegin(index){
+                console.log('Merge Begin: ', index);
+                this.setState({
+                    merging: true,
+                    mergeTarget: index
+                });
+            }
+
+            mergeComplete(index){
+                console.log('Merge Complete: ', index);
+
+                if(index==this.state.mergeTarget){
+                    this.setState({merging: false});
+                }else{
+                    // Merge Both Blend Items, Then Update State, Then Save
+                    let blendItems = this.state.blendItems;
+                    let mergeItem1 = blendItems[this.state.mergeTarget];
+                    let mergeItem2 = blendItems[index];
+
+                    if(this.state.mergeTarget < index){
+                        mergeItem1['L1'] = mergeItem1['L1'] + ' ' + mergeItem2['L1'];
+                        mergeItem1['L2'] = mergeItem1['L2'] + ' ' + mergeItem2['L2'];
+                    }else{
+                        mergeItem1['L1'] = mergeItem2['L1'] + ' ' + mergeItem1['L1'];
+                        mergeItem1['L2'] = mergeItem2['L2'] + ' ' + mergeItem1['L2'];
+                    }
+
+                    blendItems[this.state.mergeTarget] = mergeItem1;
+                    blendItems.splice(index, 1);
+
+                    this.setState({merging: false, blendItems: blendItems});
+                    this.save(this.state.complete, blendItems);
+                }
+            }
+
+            splitItem(index){
+                let blendItems = this.state.blendItems;
+                let splitItem = blendItems[index];
+                let pieces = splitItem.L1.split(' ');
+
+                if(pieces.length>1){
+                    console.log('Splitting...');
+                    // Remove Split Item
+                    blendItems.splice(index, 1)
+
+                    // Insert Items
+                    for(var i=0; i<pieces.length; i++){
+                        let item = Object.assign({}, splitItem);
+                        item.L1 = pieces[i];
+                        blendItems.splice(index + i, 0, item);
+                    }
+
+                    this.setState({blendItems: blendItems});
+                    //this.save(this.state.complete, blendItems);
+                }else{
+                    console.log('Can not split: TOO SHORT');
+                }
+            }
+
+            changeBlend(blendLevel){
+                console.log('Change Blend: ', blendLevel);
+                this.setState({blendLevel: blendLevel});
+            }
+
+            updateL1Text(index, text){
+                console.log('[LINE] Update l1 text');
+                let blendItems = this.state.blendItems;
+                blendItems[index]['L1'] = text;
+                this.setState({blendItems: blendItems});
+            }
+
+            updateL2Text(index, text){
+                console.log('[LINE] Update l2 text');
+                let blendItems = this.state.blendItems;
+                blendItems[index]['L2'] = text;
+                this.setState({blendItems: blendItems});
+            }
+
+            updateItemBlendLevel(index, blendLevel){
+                console.log('[LINE] Update Item Blend Level');
+                let blendItems = this.state.blendItems;
+                blendItems[index]['blendLevel'] = blendLevel;
+                this.setState({blendItems: blendItems});
+                this.save(this.state.complete, blendItems);
+            }
+
+            saveBlendItem(){
+                this.save(this.state.complete, this.state.blendItems);
+            }
+
+            save(complete, blendItems){
+                console.log('Save Blend Line');
+                var line = this.state.line;
+                var blendItems = this.state.blendItems;
+                var blend = '';
+                for(var i=0; i<blendItems.length; i++){
+                    blend += '['+blendItems[i]['L1']+'|'+blendItems[i]['L2']+'|'+blendItems[i]['blendLevel']+'] '
+                }
+
+                var params = {
+                    'page_num': line['Page'],
+                    'line_num': line['Line'],
+                    'blend': blend,
+                    'complete': complete
+                };
+
+                var updateUrl = '/publisher/translation/'+this.props.translationID+'/update_blend_review/';
+                $.post(updateUrl, params, function(resp){
+                    console.log(resp);
+                }, 'json');
+            }
+
+            toggleCompletion(){
+                console.log('toggle completion');
+                var complete = !this.state.complete;
+                this.setState({complete: complete});
+                this.save(complete, this.state.blendItems);
+            }
+
+            render(){
+                // Get Blend Items
+                let _this = this;
+                let blendItems = this.state.blendItems.map(function(item, index){
+                    return <BlendItem index={index}
+                                      item={item} blendLevel={_this.state.blendLevel}
+                                      updateBlendItem={_this.updateBlendItem}
+                                      merging={_this.state.merging}
+                                      mergeBegin={_this.mergeBegin}
+                                      mergeComplete={_this.mergeComplete}
+                                      updateL1Text={_this.updateL1Text}
+                                      updateL2Text={_this.updateL2Text}
+                                      updateItemBlendLevel={_this.updateItemBlendLevel}
+                                      saveBlendItem={_this.saveBlendItem}
+                                      splitItem={_this.splitItem}/>;
+                });
+
+                // Get Complete Button
+                let completeBtn = <i className="complete-btn fa fa-check-circle-o" aria-hidden="true" onClick={this.toggleCompletion}></i>;
+                if(this.state.complete){
+                    completeBtn = <i className="complete-btn active fa fa-check-circle-o" aria-hidden="true" onClick={this.toggleCompletion}></i>;
+                }
+
+                return (
+                    <div className="blend-row">
+                        <div className="blend-line">
+                            {blendItems}
+                        </div>
+                        <select className="blend-select" onChange={(e)=>this.changeBlend(e.target.value)}>
+                            <option value='1'>Blend 1</option>
+                            <option value='2'>Blend 2</option>
+                            <option value='3'>Blend 3</option>
+                            <option value='4'>Blend 4</option>
+                            <option value='5'>Blend 5</option>
+                        </select>
+
+                        {completeBtn}
+                    </div>
+                );
+            }
+        }
+
+        class BlendReviewApp extends React.Component {
+            constructor(props){
+                super(props);
+                this.state = {
+                    lines: props.lines
+                };
+            }
+
+            render(){
+                let _this = this;
+
+                let blendLines = this.state.lines.map(function(line){
+                    return <BlendLine line={line} translationID={_this.props.translationID}/>;
+                });
+
+                return (
+                    <div id="blend-review">
+                        {blendLines}
+                    </div>
+                );
+            }
+        }
+
+        // Render Blend Editor
+        ReactDOM.render(<BlendReviewApp lines={lines} translationID={translationID}/>, document.getElementById('blend-review-container') );
+    </script>
+{% endblock %}

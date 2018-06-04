@@ -1,0 +1,53 @@
+{% extends "publisher/base/book_dashboard.html" %}
+{% load static %}
+
+<!-- Head -->
+{% block head %}
+    {{block.super}}
+    <script type="text/babel" src="{% static 'js/book_editor/components/general_form.js' %}"></script>
+{% endblock %}
+
+<!-- Content -->
+{% block content %}
+<div class="row book-grid">
+
+    <!-- Book -->
+    <div id='main-book-cover' class="col-md-6 book">
+        <div class="cover-image-wrapper">
+            <div class="overlay">
+                <button class="btn edit-btn">
+                    <span>Change</span>
+                </button>
+            </div>
+            <img class="cover-image" src="{{book.cover_image.url}}"/>
+        </div>
+    </div>
+
+    <!-- General Information -->
+    <div id="book-general-info-form" class="col-md-6 book-general-info"></div>
+
+</div>
+{% endblock %}
+
+<!-- Javascript -->
+{% block js %}
+    {{block.super}}
+
+    <script type="text/babel">
+        // Create Book Cover Component
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <BookCoverContainer></BookCoverContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('main-book-cover')
+        );
+
+        // Render General Info Form
+        ReactDOM.render(
+            <ReactRedux.Provider store={store}>
+                <GeneralFormContainer></GeneralFormContainer>
+            </ReactRedux.Provider>,
+            document.getElementById('book-general-info-form')
+        );
+    </script>
+{% endblock %}
